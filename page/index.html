@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Computer Pizza</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #000;
+      color: #e0e0e0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      line-height: 1.6;
+      padding: 2rem 1.5rem;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      color: #fff;
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+    }
+
+    h2 {
+      color: #fff;
+      font-size: 1.4rem;
+      margin-top: 2.5rem;
+      margin-bottom: 0.75rem;
+      border-bottom: 1px solid #333;
+      padding-bottom: 0.4rem;
+    }
+
+    h3 {
+      color: #fff;
+      font-size: 1.1rem;
+      margin-top: 1.75rem;
+      margin-bottom: 0.5rem;
+    }
+
+    p {
+      margin-bottom: 0.75rem;
+    }
+
+    a {
+      color: #6db3f2;
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    .subtitle {
+      color: #999;
+      font-size: 1.1rem;
+      margin-bottom: 2rem;
+    }
+
+    pre {
+      background: #111;
+      border: 1px solid #222;
+      border-radius: 6px;
+      padding: 1rem;
+      overflow-x: auto;
+      margin-bottom: 1rem;
+      font-size: 0.85rem;
+      line-height: 1.5;
+    }
+
+    code {
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      font-size: 0.85em;
+    }
+
+    p code, li code {
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 3px;
+      padding: 0.15em 0.35em;
+    }
+
+    pre code {
+      background: none;
+      border: none;
+      padding: 0;
+    }
+
+    ol, ul {
+      margin-bottom: 0.75rem;
+      padding-left: 1.5rem;
+    }
+
+    li {
+      margin-bottom: 0.35rem;
+    }
+
+    strong {
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+
+  <div style="text-align: center; margin-bottom: 1.5rem;">
+    <img src="logo.png" alt="Computer Pizza" style="max-width: 240px;">
+  </div>
+
+  <h1>Computer Pizza</h1>
+  <p class="subtitle">Order Domino's pizza and pay with USDC on Ethereum.</p>
+
+  <h2>Adding to an OpenClaw Bot</h2>
+
+  <h3>1. Clone the repo into your bot's skills directory</h3>
+  <pre><code>cd your-openclaw-bot/
+git clone git@github.com:numbergroup/computerpizza.git skills/computerpizza</code></pre>
+
+  <h3>2. Install dependencies</h3>
+  <pre><code>pip install -r skills/computerpizza/requirements.txt</code></pre>
+
+  <h3>3. Register the skill</h3>
+  <p>Add the following to your bot's <code>openclaw.yaml</code> (or equivalent config):</p>
+  <pre><code>skills:
+  - name: computerpizza
+    path: skills/computerpizza
+    description: Order Domino's pizza paid with USDC on Ethereum mainnet
+    tools:
+      - name: menu
+        description: &gt;
+          Fetch the Domino's menu for a delivery address.
+          Returns a JSON object with storeId and an array of menu items.
+        parameters:
+          street: { type: string, required: true, description: "Delivery street address" }
+          city: { type: string, required: true, description: "Delivery city" }
+          state: { type: string, required: true, description: "2-letter state code" }
+          zip: { type: string, required: true, description: "5-digit zip code" }
+        command: python skills/computerpizza/pizza.py --street "{street}" --city "{city}" --state "{state}" --zip "{zip}" menu
+
+      - name: order
+        description: &gt;
+          Place a Domino's order and pay with USDC. Requires an Ethereum private key
+          with sufficient USDC balance. Returns order confirmation JSON.
+        parameters:
+          street: { type: string, required: true }
+          city: { type: string, required: true }
+          state: { type: string, required: true }
+          zip: { type: string, required: true }
+          key: { type: string, required: true, description: "Ethereum private key (hex)" }
+          rpc: { type: string, required: true, description: "Ethereum RPC URL" }
+          name: { type: string, required: true, description: "Customer name" }
+          phone: { type: string, required: true, description: "Customer phone" }
+          email: { type: string, required: true, description: "Customer email" }
+          items: { type: string, required: true, description: 'JSON array, e.g. [{"code":"14SCREEN","quantity":1}]' }
+          store: { type: string, required: true, description: "Store ID from menu output" }
+        command: &gt;
+          python skills/computerpizza/pizza.py
+          --street "{street}" --city "{city}" --state "{state}" --zip "{zip}"
+          --key "{key}" --rpc "{rpc}"
+          --name "{name}" --phone "{phone}" --email "{email}"
+          order --items '{items}' --store {store}
+
+      - name: retry-order
+        description: &gt;
+          Retry a failed order using an existing USDC transaction hash.
+          Use this when payment succeeded but order placement failed.
+        parameters:
+          street: { type: string, required: true }
+          city: { type: string, required: true }
+          state: { type: string, required: true }
+          zip: { type: string, required: true }
+          key: { type: string, required: true }
+          name: { type: string, required: true }
+          phone: { type: string, required: true }
+          email: { type: string, required: true }
+          items: { type: string, required: true }
+          store: { type: string, required: true }
+          tx_hash: { type: string, required: true, description: "Existing USDC tx hash" }
+        command: &gt;
+          python skills/computerpizza/pizza.py
+          --street "{street}" --city "{city}" --state "{state}" --zip "{zip}"
+          --key "{key}" --name "{name}" --phone "{phone}" --email "{email}"
+          retry-order --tx-hash {tx_hash} --items '{items}' --store {store}</code></pre>
+
+  <h3>4. Set secrets</h3>
+  <p>Store the Ethereum private key and RPC URL as bot secrets rather than hardcoding them. How you do this depends on your OpenClaw deployment:</p>
+  <p><strong>Environment variables:</strong></p>
+  <pre><code>export COMPUTERPIZZA_ETH_KEY="0x..."
+export COMPUTERPIZZA_ETH_RPC="https://eth.llamarpc.com"</code></pre>
+  <p>Then reference them in your config:</p>
+  <pre><code>key: ${COMPUTERPIZZA_ETH_KEY}
+rpc: ${COMPUTERPIZZA_ETH_RPC}</code></pre>
+
+  <h3>5. Bot workflow</h3>
+  <p>The typical three-step flow for a bot:</p>
+  <ol>
+    <li><strong><code>menu</code></strong> — Fetch the store ID and available items for the user's address</li>
+    <li><strong><code>order</code></strong> — Send USDC and place the order with selected items</li>
+    <li><strong><code>retry-order</code></strong> — If step 2 fails after USDC was sent, retry with the same tx hash</li>
+  </ol>
+  <p>All three commands produce JSON on stdout, making them easy to parse.</p>
+
+  <h2>Requirements</h2>
+  <ul>
+    <li>Python 3</li>
+    <li>An Ethereum wallet with USDC balance on mainnet</li>
+    <li>An Ethereum RPC endpoint (e.g. <code>https://eth.llamarpc.com</code>)</li>
+  </ul>
+
+  <h2>Full documentation</h2>
+  <p>See <a href="https://github.com/numbergroup/computerpizza/blob/main/SKILL.md">SKILL.md</a> for the complete API reference, EIP-712 schema, on-chain details, and troubleshooting guide.</p>
+
+</body>
+</html>
